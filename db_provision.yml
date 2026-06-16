@@ -1,0 +1,63 @@
+---
+# ✅ PLAY 1: Fetch ServiceNow Data
+- name: Fetch ServiceNow Data
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - vars/vars.yml
+
+  tasks:
+    - include_tasks: tasks/fetch_servicenow.yml
+
+    # ✅ Add dynamic server
+    - name: Dynamically add server
+      add_host:
+        name: dynamic_server
+        ansible_host: "{{ server_ip }}"
+        ansible_user: ec2-user
+        groups: dynamic_servers
+
+
+# ✅ PLAY 2: Database Provisioning
+- name: Database Provisioning
+  hosts: dynamic_servers
+  become: yes
+  gather_facts: false
+
+  vars:
+    db_name: "{{ hostvars['localhost']['db_name'] }}"
+    db_user: "{{ hostvars['localhost']['db_user'] }}"
+    db_password: "{{ hostvars['localhost']['db_password'] | default('Pass@123') }}"
+
+  tasks:
+    - name: Test connection
+      ping:
+
+    # ✅ FIXED: Use MySQL socket
+    - name: Create Database
+      community.mysql.mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+
+    - name: Create DB User
+      community.mysql.mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL"
+        host: "%"
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+
+
+# ✅ PLAY 3: Update ServiceNow
+- name: Update ServiceNow
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - vars/vars.yml
+
+  tasks:
+    - include_tasks: tasks/update_servicenow.yml
