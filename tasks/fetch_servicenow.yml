@@ -10,11 +10,14 @@
     validate_certs: no
   register: ritm_result
 
+
+# ✅ STEP 2: Set sys_id
 - name: Set sys_id
   set_fact:
     ritm_sysid: "{{ ritm_result.json.result[0].sys_id }}"
 
-# ✅ STEP 2: Get variables mapping
+
+# ✅ STEP 3: Get variable mappings
 - name: Fetch variable mappings
   uri:
     url: "https://{{ snow_instance }}/api/now/table/sc_item_option_mtom?sysparm_query=request_item={{ ritm_sysid }}"
@@ -25,7 +28,8 @@
     validate_certs: no
   register: mtom_result
 
-# ✅ STEP 3: Get actual values
+
+# ✅ STEP 4: Get actual values
 - name: Fetch variable values
   uri:
     url: "https://{{ snow_instance }}/api/now/table/sc_item_option/{{ item.sc_item_option.value }}"
@@ -38,15 +42,15 @@
   register: var_details
 
 
-# ✅ STEP 4: Set variables dynamically
-# ✅ STEP 4: Set variables dynamically (FINAL WORKING ✅
+# ✅ STEP 5: Set variables dynamically
 - name: Set variables dynamically
   set_fact:
     db_name: "{{ var_details.results | map(attribute='json.result.value') | list | select('match','.*db.*') | list | first }}"
     db_user: "{{ var_details.results | map(attribute='json.result.value') | list | select('match','.*user.*') | list | last }}"
-    server_ip: "{{ var_details.results | map(attribute='json.result.value') | list | select('match','[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+') | list | first }}" 
+    server_ip: "{{ var_details.results | map(attribute='json.result.value') | list | select('match','[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+') | list | first }}"
 
 
+# ✅ STEP 6: Debug variables
 - name: Debug variables
   debug:
     msg:
