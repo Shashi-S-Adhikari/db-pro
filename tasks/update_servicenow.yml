@@ -1,13 +1,34 @@
----
-- name: Update ServiceNow Work Notes
+- name: Update ServiceNow - Close Ticket
   uri:
-    url: "https://{{ snow_instance }}/api/now/table/sc_req_item/{{ hostvars['localhost']['ritm_sysid'] }}"
+    url: "https://{{ snow_instance }}/api/now/table/sc_req_item/{{ ritm_sysid }}"
     method: PATCH
     user: "{{ snow_user }}"
     password: "{{ snow_password }}"
     force_basic_auth: yes
     validate_certs: no
+    headers:
+      Content-Type: "application/json"
     body_format: json
     body:
-      work_notes: "Database {{ hostvars['localhost']['db_name'] }} created successfully."
+      state: "3"
+      close_code: "successful"
+      close_notes: >-
+        ✅ Automation Completed Successfully
 
+        Request: {{ ritm_number }}
+
+        Database Name: {{ hostvars['localhost']['db_name'] }}
+        Database User: {{ hostvars['localhost']['db_user'] }}
+        Server: {{ hostvars['localhost']['server_ip'] }}
+
+        Status: SUCCESS ✅
+        Closed automatically by Ansible.
+
+      work_notes: >-
+        ✅ Work Completed
+
+        Database {{ hostvars['localhost']['db_name'] }} created successfully
+        User {{ hostvars['localhost']['db_user'] }} created and granted access
+        Server: {{ hostvars['localhost']['server_ip'] }}
+
+  register: update_result
